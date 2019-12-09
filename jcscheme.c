@@ -160,11 +160,6 @@ int init_jack(jack_setup_t *setup)
       return RC_FAIL;
    }
 
-   if (jack_activate(setup->client) != 0) {
-      display_error("Can not activate JACK client");
-      return RC_FAIL;
-   }
-
    display_info("JACK client created");
    return RC_OK;
 }
@@ -451,6 +446,14 @@ int main(int argc, char **argv)
 
    if (init_guile_thread(&guile_setup, jack_setup.ringbuffer) != RC_OK) {
       display_error("Guile initialization failed. The program exits");
+      rc = RC_FAIL;
+      goto cleanup_3;
+   }
+
+   sleep(2);
+
+   if (jack_activate(jack_setup.client) != 0) {
+      display_error("Can not activate JACK client");
       rc = RC_FAIL;
       goto cleanup_3;
    }
