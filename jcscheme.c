@@ -17,7 +17,6 @@
 
 #include <libguile.h>
 
-//TODO: proper makefile with pkg-config
 //TODO: incorporate fftw library for good DFT support
 
 #define JC_CLIENT_NAME "J-C-Scheme"
@@ -25,6 +24,7 @@
 #define JC_FUNC_NAME "f"
 #define JC_RINGBUFFER_SIZE 10000
 #define JC_TMP_BUFFER_SIZE 1024
+#define JC_KR 1000
 
 #define RC_OK 0
 #define RC_FAIL 1
@@ -67,6 +67,7 @@ typedef struct
 
 jack_setup_t *g_sh_jack;
 jack_nframes_t g_sample_rate;
+long long unsigned g_t;
 
 void jack_shutdown_cb(void *arg)
 {
@@ -220,8 +221,12 @@ void shutdown_xcb(my_xcb_setup_t *setup)
 
 double xcb_mouse_x(my_xcb_setup_t *setup)
 {
+   static double last_x = 0;
    double x = 0;
    xcb_generic_error_t *e = NULL;
+
+   if (g_t % JC_KR != 0)
+      return last_x;
 
    xcb_query_pointer_cookie_t cookie = xcb_query_pointer(setup->connection, setup->root_window);
    xcb_query_pointer_reply_t *reply_p = xcb_query_pointer_reply(setup->connection, cookie, &e);
@@ -232,6 +237,7 @@ double xcb_mouse_x(my_xcb_setup_t *setup)
    if (reply_p) free(reply_p);
    if (e) free(e);
 
+   last_x = x;
    return x;
 }
 
@@ -243,7 +249,11 @@ SCM scm_mouse_x()
 double xcb_mouse_y(my_xcb_setup_t *setup)
 {
    double y = 0;
+   static double last_y = 0;
    xcb_generic_error_t *e = NULL;
+
+   if (g_t % JC_KR != 0)
+      return last_y;
 
    xcb_query_pointer_cookie_t cookie = xcb_query_pointer(setup->connection, setup->root_window);
    xcb_query_pointer_reply_t *reply_p = xcb_query_pointer_reply(setup->connection, cookie, &e);
@@ -254,6 +264,7 @@ double xcb_mouse_y(my_xcb_setup_t *setup)
    if (reply_p) free(reply_p);
    if (e) free(e);
 
+   last_y = y;
    return y;
 }
 
@@ -314,6 +325,7 @@ void* guile_thread_func(void *arg)
    guile_setup_t *setup = (guile_setup_t*) arg;
    sample_t data[JC_TMP_BUFFER_SIZE];
    generator_arg_t generator_args;
+   g_t = 0;
 
    scm_init_guile();
    scm_c_define_gsubr("sample-rate", 0, 0, 0, scm_sample_rate);
@@ -346,7 +358,7 @@ void* guile_thread_func(void *arg)
                return NULL;
             }
             data[i] = (sample_t) scm_to_double(v);
-            generator_args.t ++;
+            generator_args.t = (++ g_t);
          }
 
          jack_ringbuffer_write(setup->buffer, (const char*) data, avail * sizeof(sample_t));
