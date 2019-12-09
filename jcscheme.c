@@ -24,7 +24,7 @@
 #define JC_FUNC_NAME "f"
 #define JC_RINGBUFFER_SIZE 10000
 #define JC_TMP_BUFFER_SIZE 1024
-#define JC_KR 1000
+#define JC_KR 200
 
 #define RC_OK 0
 #define RC_FAIL 1
@@ -39,6 +39,18 @@ void display_error(const char *fmt, ...)
    va_start(argP, fmt);
 
    fprintf(stderr, "ERROR: ");
+   vfprintf(stderr, fmt, argP);
+   fprintf(stderr, "\n");
+
+   va_end(argP);
+}
+
+void display_warning(const char *fmt, ...)
+{
+   va_list argP;
+   va_start(argP, fmt);
+
+   fprintf(stderr, "WARNING: ");
    vfprintf(stderr, fmt, argP);
    fprintf(stderr, "\n");
 
@@ -77,6 +89,7 @@ void jack_shutdown_cb(void *arg)
 
 int jack_process_cb(jack_nframes_t nframes, void *arg)
 {
+   int underfilled_flag = 0;
    jack_setup_t *setup = (jack_setup_t*) arg;
 
    jack_default_audio_sample_t *out_buffer = (jack_default_audio_sample_t *) jack_port_get_buffer(setup->output_port, nframes);
@@ -89,10 +102,14 @@ int jack_process_cb(jack_nframes_t nframes, void *arg)
    size_t read_len = nframes * sizeof(sample_t); 
    while (read_len > 0) {
       size_t l = jack_ringbuffer_read(setup->ringbuffer, out_p, read_len);
+      if (l == 0)
+         underfilled_flag = 1;
       read_len -= l;
       out_p += l;
    }
 
+   if (underfilled_flag)
+      display_warning("Buffer underfilled");
    return RC_OK;
 }
 
