@@ -1,5 +1,6 @@
-OPTS = -ljack -lm -lguile-2.2 -lpthread \
-		 -I/usr/include/guile/2.2 \
+OPTS = -ljack -lm -lpthread \
+		 $(shell pkg-config --libs --cflags xcb) \
+		 -I/usr/include/guile/2.2 -lguile-2.2 \
 		 -std=c99 -Wall -g -D_POSIX_C_SOURCE
 BIN = jcs
 
