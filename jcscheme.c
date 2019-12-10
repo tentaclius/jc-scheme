@@ -233,12 +233,8 @@ void shutdown_xcb(my_xcb_setup_t *setup)
 
 double xcb_mouse_x(my_xcb_setup_t *setup)
 {
-   static double last_x = 0;
    double x = 0;
    xcb_generic_error_t *e = NULL;
-
-   if (g_t % JC_KR != 0)
-      return last_x;
 
    xcb_query_pointer_cookie_t cookie = xcb_query_pointer(setup->connection, setup->root_window);
    xcb_query_pointer_reply_t *reply_p = xcb_query_pointer_reply(setup->connection, cookie, &e);
@@ -248,24 +244,21 @@ double xcb_mouse_x(my_xcb_setup_t *setup)
 
    if (reply_p) free(reply_p);
    if (e) free(e);
-
-   last_x = x;
    return x;
 }
 
 SCM scm_mouse_x()
 {
-   return scm_from_double(g_xcb ? xcb_mouse_x(g_xcb) : 0.0);
+   static double last_x = 0;
+   if (g_t % JC_KR == 0)
+      last_x = (g_xcb ? xcb_mouse_x(g_xcb) : 0.0);
+   return scm_from_double(last_x);
 }
 
 double xcb_mouse_y(my_xcb_setup_t *setup)
 {
    double y = 0;
-   static double last_y = 0;
    xcb_generic_error_t *e = NULL;
-
-   if (g_t % JC_KR != 0)
-      return last_y;
 
    xcb_query_pointer_cookie_t cookie = xcb_query_pointer(setup->connection, setup->root_window);
    xcb_query_pointer_reply_t *reply_p = xcb_query_pointer_reply(setup->connection, cookie, &e);
@@ -275,14 +268,15 @@ double xcb_mouse_y(my_xcb_setup_t *setup)
 
    if (reply_p) free(reply_p);
    if (e) free(e);
-
-   last_y = y;
    return y;
 }
 
 SCM scm_mouse_y()
 {
-   return scm_from_double(g_xcb ? xcb_mouse_y(g_xcb) : 0.0);
+   static double last_y = 0;
+   if (g_t % JC_KR == 0)
+      last_y = (g_xcb ? xcb_mouse_y(g_xcb) : 0.0);
+   return scm_from_double(last_y);
 }
 
 typedef struct
