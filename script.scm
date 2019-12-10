@@ -1,19 +1,22 @@
+(use-modules (ice-9 match))
+
 (define pi 3.141592653589793)
 (define (seconds t) (/ t (sample-rate)))
 
-(define (Sin freq)
+(define (Sin f)
   (let ((phase 0)
         (t1 0)
-        (f freq))
-    (lambda t
-      (cond
-        ((number? (car t))
-         (set! phase (+ phase (* 2 pi f (seconds (- (car t) t1)))))
-         (set! t1 (car t))
-         (sin phase) )
+        (freq f))
+    (match args
+           (('freq) freq)
+           (('set-freq f) (set! freq f) freq)
+           (('phase) phase)
+           (('set-phase p) (set! phase p) phase)
 
-        ((equal? (car t) 'freq) f)
-        ((equal? (car t) 'set-freq) (set! f (cadr t)) f) ))))
+           ((t)
+            (set! phase (+ phase (* 2 pi freq (seconds (- t t1)))))
+            (set! t1 t)
+            (sin phase) ) )))
 
 (define carrier (Sin 440))
 (define modulator (Sin 20))
