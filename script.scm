@@ -7,16 +7,30 @@
   (let ((phase 0)
         (t1 0)
         (freq f))
-    (match args
-           (('freq) freq)
-           (('set-freq f) (set! freq f) freq)
-           (('phase) phase)
-           (('set-phase p) (set! phase p) phase)
+    (lambda args
+      (match args
+             (('freq) freq)
+             (('set-freq f) (set! freq f) freq)
+             (('phase) phase)
+             (('set-phase p) (set! phase p) phase)
 
-           ((t)
-            (set! phase (+ phase (* 2 pi freq (seconds (- t t1)))))
-            (set! t1 t)
-            (sin phase) ) )))
+             ((t)
+              (set! phase (+ phase (* 2 pi freq (seconds (- t t1)))))
+              (set! t1 t)
+              (sin phase) ) ))))
+
+(define (Sin f)
+  (let ((phase 0)
+        (t1 0)
+        (freq f))
+    (lambda args
+      (cond
+        ((number? (car args))
+         (let ((t (car args)))
+           (set! phase (+ phase (* 2 pi freq (seconds (- t t1)))))
+           (set! t1 t)
+           (sin phase) ))
+        ((equal? (car args) 'set-freq) (set! freq (cadr args))) ))))
 
 (define carrier (Sin 440))
 (define modulator (Sin 20))
