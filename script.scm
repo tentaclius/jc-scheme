@@ -1,7 +1,7 @@
 (define pi 3.141592653589793)
 (define (seconds t) (/ t (sample-rate)))
 
-(define (make-Sin freq)
+(define (Sin freq)
   (let ((phase 0)
         (t1 0)
         (f freq))
@@ -13,17 +13,13 @@
          (sin phase) )
 
         ((equal? (car t) 'freq) f)
-        ((equal? (car t) 'set-freq) (set! f (cadr t))) ))))
+        ((equal? (car t) 'set-freq) (set! f (cadr t)) f) ))))
 
-;(define (f t)
-;  (* 0.3 (sin (+ (* 2 pi 440 (seconds t))
-;                 (* 40 (mouse-x) (sin (* 2 pi (* 100 (mouse-y)) (seconds t))))))) )
-
-(define carrier (make-Sin 440))
-(define modulator (make-Sin 0))
+(define carrier (Sin 440))
+(define modulator (Sin 20))
 
 (define (f t)
-  (modulator 'set-freq (* 100 (+ 1 (mouse-x))))
-  (carrier 'set-freq (+ 440 (* 20 (modulator t))))
+  (modulator 'set-freq (* 60 (mouse-x)))
+  (carrier 'set-freq (+ 440 (* 100 (mouse-y) (modulator t))))
 
   (* 0.3 (carrier t)) )
