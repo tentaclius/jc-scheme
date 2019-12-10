@@ -32,11 +32,26 @@
            (sin phase) ))
         ((equal? (car args) 'set-freq) (set! freq (cadr args))) ))))
 
-(define carrier (Sin 440))
-(define modulator (Sin 20))
+;(define carrier (Sin 440))
+;(define modulator (Sin 20))
+
+(define (make-sin f) (vector f 0 0))
+(define (sin-set-freq s f) (vector-set! s 0 f) )
+(define (sin-freq s) (vector-ref s 0) )
+(define (sin-set-phase s p) (vector-set! s 1 p) )
+(define (sin-phase s) (vector-ref s 1) )
+(define (sin-set-t1 s t) (vector-set! s 2 t))
+(define (sin-t1 s) (vector-ref s 2))
+(define (sin-calc s t)
+  (sin-set-phase s (+ (sin-phase s) (* 2 pi (sin-freq s) (seconds (- t (sin-t1 s))))))
+  (sin-set-t1 s t)
+  (sin (sin-phase s)) )
+
+(define carrier (make-sin 440))
+(define modulator (make-sin 20))
 
 (define (f t)
-  (modulator 'set-freq (* 60 (mouse-x)))
-  (carrier 'set-freq (+ 440 (* 100 (mouse-y) (modulator t))))
+  (sin-set-freq modulator (* 60 (mouse-x)))
+  (sin-set-freq carrier (+ 440 (* 100 (mouse-y) (sin-calc modulator t))))
 
-  (* 0.3 (carrier t)) )
+  (* 0.3 (sin-calc carrier t)) )
