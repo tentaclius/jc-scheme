@@ -1,6 +1,17 @@
 (use-modules (ice-9 hash-table))
+(use-modules (srfi srfi-9))
+(use-modules (srfi srfi-88))  ;; keywords
+(use-modules (oop goops))     ;; oop
 
 (define pi 3.141592653589793)
+(define (to-seconds t) (/ t (sample-rate)))
+(define (from-seconds t) (inexact->exact (round (* t (sample-rate)))))
+
+(define (limit x a b)
+  (max (min x b) a))
+
+(define (in-range? x a b)
+  (and (<= x b) (>= x a)))
 
 ;; create a simple iterative loop sequence
 (define (make-loop-seq . args)
@@ -63,33 +74,61 @@
         ((symbol? n) (vector-ref notes-vec (hash-ref note-names n)))
         (else 0))) ))
 
-;; limit
-(define (limit a b x)
-  (max (min x b) a))
+;; line up class
+(define-class <Line> () 
+  (from  init-value: 0  init-keyword: #:from)
+  (to    init-value: 1  init-keyword: #:to)
+  (dur   init-form: (from-seconds 1) init-keyword: #:dur)
+  (t     init-value: 0) )
 
-;; line up
-(define (mk-line-up t0_ sec_)
-  (let ((t0 t0_)
-        (t1 (+ t0_ sec_)))
-    (lambda (t)
-      (limit 0 1 (/ (- t t0) (- t1 t0))) )))
+(define-method (value (l <Line>))
+  (let ((from (slot-ref l 'from))
+        (to   (slot-ref l 'to))
+        (dur  (slot-ref l 'dur))
+        (t    (slot-ref l 't)))
+    (slot-set! l 't (+ t 1))
+    (+ from (* (/ (limit t 0 dur) dur) (- to from))) ))
 
-;; line down
-(define (mk-line-down t0_ sec_)
-  (let ((t0 t0_)
-        (t1 (+ t0_ sec_)))
-    (lambda (t)
-      (limit 0 1 (/ (- t1 t) (- t1 t0))) )))
+(define-method (reset (l <Line>))
+  (slot-set! l 't 0) )
 
 ;; adsr
-(define (adsr-on A D S t_)
-  (let ((line-a (mk-line-up t_ A))
-        (line-d (mk-line-up (+ t_ A) D)))
-    (lambda (t)
-      (- (line-a t) (* (line-d t) (- 1 S))) )))
+(define-class <ADSR> ()
+  (A  init-value: 0  init-keyword: #:A)
+  (D  init-value: 0  init-keyword: #:D)
+  (S  init-value: 0  init-keyword: #:S)
+  (R  init-value: 0  init-keyword: #:R)
+  (t  init-value: 0)
+  (phase init-value: 'off) )
 
-(define (adsr-off s r t_)
-  (let ((line-r (mk-line-down t_ r)))
-    (lambda (t)
-      (* s (line-r t)))))
+(define-method (note-on (s <ADSR>))
+  (slot-set! s 't 0)
+  (slot-set! s 'phase 'on))
 
+(define-method (note-off (s <ADSR>))
+   (slot-set! s 't 0)
+   (slot-set! s 'phase 'release) )
+
+(define-method (value (s <ADSR>))
+   (let ((A (slot-ref s 'A))
+         (D (slot-ref s 'D))
+         (S (slot-ref s 'S))
+         (R (slot-ref s 'R))
+         (t (slot-ref s 't)))
+     (define (value-adsr)
+       (cond
+         ((in-range? t 0 A)
+          (/ t A))
+         ((in-range? t A D)
+          (+ S (* (/ (- t A) (- D A)) (- S 1))) ) ;; wrong!
+         ((> t D) S)
+         (else 0) ))
+
+     (slot-set! s 't (+ t 1))
+     (case (slot-ref s 'phase)
+       ((on) (value-adsr))
+       ((off) 0)
+       ((release)
+        (* (/ (- R (limit t 0 R)) R) S)
+        (if (>= t R) (slot-set! s 'phase off)))
+       (else 0) )))
