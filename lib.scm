@@ -114,21 +114,44 @@
          (D (slot-ref s 'D))
          (S (slot-ref s 'S))
          (R (slot-ref s 'R))
-         (t (slot-ref s 't)))
+         (t (to-seconds (slot-ref s 't))) )
+
      (define (value-adsr)
        (cond
          ((in-range? t 0 A)
           (/ t A))
-         ((in-range? t A D)
-          (+ S (* (/ (- t A) (- D A)) (- S 1))) ) ;; wrong!
+         ((in-range? t A (+ A D))
+          (- 1 (* (/ (- t A) D) (- 1 S))) )
          ((> t D) S)
          (else 0) ))
 
-     (slot-set! s 't (+ t 1))
+     (slot-set! s 't (+ (slot-ref s 't) 1))
      (case (slot-ref s 'phase)
        ((on) (value-adsr))
        ((off) 0)
        ((release)
-        (* (/ (- R (limit t 0 R)) R) S)
-        (if (>= t R) (slot-set! s 'phase off)))
+        (if (>= t R) (slot-set! s 'phase 'off))
+        (* (/ (- R (limit t 0 R)) R) S) )
        (else 0) )))
+
+;; Base class for oscilators
+(define-class <Osc> ()
+   (gain  init-value: 1  init-keyword: #:gain  getter: gain  setter: set-gain) )
+
+;; Sin oscilator
+(define-class <SinOsc> (<Osc>)
+  (freq  init-value: 0 init-keyword: freq: getter: freq setter: set-freq)
+  (phase init-value: 0 init-keyword: phase: getter: phase setter: set-phase) )
+
+(define-method (value (osc <SinOsc>))
+  (set-phase osc (+ (phase osc) (* 2 pi (freq osc) (to-seconds 1))))
+  (* (gain osc) (sin (phase osc))) ) 
+
+;; Saw oscilator
+(define-class <SawOsc> (<Osc>)
+   (freq  init-value: 0  init-keyword: #:freq  getter: freq  setter: set-freq)
+   (phase init-value: 0  init-keyword: #:phase getter: phase setter: set-phase) )
+
+(define-method (value (osc <SawOsc>))
+  (set-phase osc (+ (phase osc) (* (freq osc) (to-seconds 1))))
+  (* (gain osc) (- (* 2 (- (phase osc) (floor (phase osc)))) 1)) )

@@ -21,6 +21,7 @@
 
 #define JC_CLIENT_NAME "J-C-Scheme"
 #define JC_FILE_NAME "script.scm"
+#define JC_LIB_NAME "lib.scm"
 #define JC_FUNC_NAME "f"
 #define JC_RINGBUFFER_SIZE 10000
 #define JC_TMP_BUFFER_SIZE 1024
@@ -294,6 +295,7 @@ typedef struct {
 
 SCM guile_load_file(void *arg)
 {
+   scm_c_primitive_load(JC_LIB_NAME);
    scm_c_primitive_load(JC_FILE_NAME);
    return scm_c_eval_string(JC_FUNC_NAME);
 }
