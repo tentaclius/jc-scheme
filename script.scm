@@ -75,11 +75,14 @@
 ;  (* 0.3 (carrier 'calc t)) )
 
 (define-class <SinOsc> ()
-              (freq  #:init-value 0 #:init-keyword #:freq #:getter freq #:setter set-freq)
-              (phase #:init-value 0 #:init-keyword #:phase #:getter phase #:setter set-phase)
-              (t1 #:init-value 0 #:getter sin-t1 #:setter set-sin-t1) )
+  (freq  #:init-value 0 #:init-keyword #:freq #:getter freq #:setter set-freq)
+  (phase #:init-value 0 #:init-keyword #:phase #:getter phase #:setter set-phase)
+  (t1 #:init-value 0 #:getter sin-t1 #:setter set-sin-t1) )
+
 (define-method (calc (osc <SinOsc>) (t <number>))
-               (set-phase osc (+ (phase osc) (* 2 pi (freq osc) (seconds (- t (sin-t1 osc)))))) )
+  (set-phase osc (+ (phase osc) (* 2 pi (freq osc) (seconds (- t (sin-t1 osc))))))
+  (set-sin-t1 osc t)
+  (sin (phase osc)) ) 
 
 (define carrier (make <SinOsc> #:freq 440))
 (define modulator (make <SinOsc> #:freq 20))
