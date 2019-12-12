@@ -42,6 +42,15 @@
 ;    (lambda args
 ;      (apply (hash-ref methods (car args)) (cdr args)) )))
 
+;(define carrier (Sin 440))
+;(define modulator (Sin 20))
+;
+;(define (f t)
+;  (modulator 'set-freq (* 60 (mouse-x)))
+;  (carrier 'set-freq (+ 440 (* 100 (mouse-y) (modulator 'calc t))))
+;
+;  (* 0.3 (carrier 'calc t)) )
+
 ;; Records
 ;(define-record-type <sin>
 ;  (sin-constructor freq phase t1)
@@ -65,23 +74,12 @@
 ;
 ;  (* 0.3 (sin-calc carrier t)) )
 
-;(define carrier (Sin 440))
-;(define modulator (Sin 20))
-;
-;(define (f t)
-;  (modulator 'set-freq (* 60 (mouse-x)))
-;  (carrier 'set-freq (+ 440 (* 100 (mouse-y) (modulator 'calc t))))
-;
-;  (* 0.3 (carrier 'calc t)) )
-
 (define-class <SinOsc> ()
   (freq  #:init-value 0 #:init-keyword #:freq #:getter freq #:setter set-freq)
-  (phase #:init-value 0 #:init-keyword #:phase #:getter phase #:setter set-phase)
-  (t1 #:init-value 0 #:getter sin-t1 #:setter set-sin-t1) )
+  (phase #:init-value 0 #:init-keyword #:phase #:getter phase #:setter set-phase) )
 
 (define-method (calc (osc <SinOsc>) (t <number>))
-  (set-phase osc (+ (phase osc) (* 2 pi (freq osc) (seconds (- t (sin-t1 osc))))))
-  (set-sin-t1 osc t)
+  (set-phase osc (+ (phase osc) (* 2 pi (freq osc) (seconds 1))))
   (sin (phase osc)) ) 
 
 (define carrier (make <SinOsc> #:freq 440))
