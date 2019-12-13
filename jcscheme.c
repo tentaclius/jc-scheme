@@ -297,7 +297,7 @@ SCM guile_load_file(void *arg)
 {
    scm_c_primitive_load(JC_LIB_NAME);
    scm_c_primitive_load(JC_FILE_NAME);
-   return scm_c_eval_string(JC_FUNC_NAME);
+   return scm_variable_ref(scm_c_lookup(JC_FUNC_NAME));
 }
 
 SCM guile_run_generator(void *arg)
